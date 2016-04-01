@@ -1,0 +1,74 @@
+<html>
+<!-- https://www.frankmitchell.org/2015/01/fisher-yates/ for the shuffling algorithm -->
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="dist/css/mobile-angular-ui-hover.min.css" />
+    <link rel="stylesheet" href="dist/css/mobile-angular-ui-base.min.css" />
+    <link rel="stylesheet" href="dist/css/mobile-angular-ui-desktop.min.css" />
+    <link rel="stylesheet" href="main.css" />
+    <script src="dist/js/angular.min.js">
+    </script>
+    <script src="dist/js/angular-route.min.js">
+    </script>
+    <script src="dist/js/angular-animate.js"></script>
+    <script src="dist/js/mobile-angular-ui.min.js">
+    </script>
+    <script>
+        apiKey = 'wLT26LF3VUbLz6TXR8CjMEZxBto0v6KEfVvhOs09';
+        URL = {
+            search: 'http://api.nal.usda.gov/ndb/search/',
+            list: 'http://api.nal.usda.gov/ndb/list'
+        };
+        theScope = {};
+        function shuffle(array) {
+            var i = 0
+                , j = 0
+                , temp = null
+
+            for (i = array.length - 1; i > 0; i -= 1) {
+                j = Math.floor(Math.random() * (i + 1))
+                temp = array[i]
+                array[i] = array[j]
+                array[j] = temp
+            }
+        }
+        angular.module('myApp', ['mobile-angular-ui', 'ngAnimate']).controller("myCtrl", ['$scope', '$http', function ($scope, $http, $timeout) {
+            $scope.thing = 'hello';
+            $http({
+                method : 'GET',
+                url : URL.list,
+                params : {
+                    api_key : apiKey,
+                    format : 'json',
+                    lt : 'g'
+                }
+            }).then(function(response){
+                $scope.groups = response.data.list;
+            });
+
+        }]);
+    </script>
+</head>
+
+<body ng-app="myApp" ng-controller="myCtrl" class="scrollable">
+    <div class="section">
+        <div class="container">
+            <div class="row">
+                <div class="col-xs-12">
+                    <h1>Nom Nom Quiz!</h1>
+                </div>
+                <div class="col-xs-12">
+                    <p>Number of categories: {{groups.total}}</p>
+                </div>
+                <ul>
+                    <li ng-repeat="group in groups.item">{{group.id}}: {{group.name}}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+
+</html>
