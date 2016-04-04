@@ -1,3 +1,11 @@
+table.tabley {
+    border-collapse: collapse;
+}
+
+table.tabley, .tabley th, .tabley td {
+    border: 1px solid black;
+}
+
 .hidden {
     display: none;
 }

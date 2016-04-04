@@ -34,6 +34,7 @@
             }
         }
         angular.module('myApp', ['mobile-angular-ui', 'ngAnimate']).controller("myCtrl", ['$scope', '$http', function ($scope, $http, $timeout) {
+            theScope = $scope;
             $scope.thing = 'hello';
             $http({
                 method : 'GET',
