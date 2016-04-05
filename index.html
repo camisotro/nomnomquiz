@@ -1,5 +1,6 @@
 <html>
 <!-- https://www.frankmitchell.org/2015/01/fisher-yates/ for the shuffling algorithm -->
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,10 +18,14 @@
     <script>
         apiKey = 'wLT26LF3VUbLz6TXR8CjMEZxBto0v6KEfVvhOs09';
         URL = {
-            search: 'http://api.nal.usda.gov/ndb/search/',
-            list: 'http://api.nal.usda.gov/ndb/list'
+            search: 'http://api.nal.usda.gov/ndb/search'
+            , list: 'http://api.nal.usda.gov/ndb/list'
+            , nutrients: 'http://api.nal.usda.gov/ndb/nutrients'
+            , report: 'http://api.nal.usda.gov/ndb/report'
         };
-        theScope = {};
+        var theScope = {};
+        var theLimit = 3;
+
         function shuffle(array) {
             var i = 0
                 , j = 0
@@ -33,21 +38,85 @@
                 array[j] = temp
             }
         }
-        angular.module('myApp', ['mobile-angular-ui', 'ngAnimate']).controller("myCtrl", ['$scope', '$http', function ($scope, $http, $timeout) {
+        angular.module('myApp', ['mobile-angular-ui', 'ngAnimate']).controller("myCtrl", ['$q', '$scope', '$http', function ($q, $scope, $http, $timeout) {
             theScope = $scope;
+            $scope.foods = [];
+            $scope.reports = {};
+            $scope.requests = [];
+            $scope.nutrients = {
+                255: "water"
+                , 208: "calories"
+                , 203: "protein"
+                , 204: "fat"
+                , 205: "carbohydrates"
+                , 291: "fiber"
+                , 269: "sugar"
+                , 307: "sodium"
+                , 601: "cholesterol"
+            };
             $scope.thing = 'hello';
-            $http({
-                method : 'GET',
-                url : URL.list,
-                params : {
-                    api_key : apiKey,
-                    format : 'json',
-                    lt : 'g'
-                }
-            }).then(function(response){
-                $scope.groups = response.data.list;
-            });
+            //            $http({
+            //                method : 'GET',
+            //                url : URL.list,
+            //                params : {
+            //                    api_key : apiKey,
+            //                    format : 'json',
+            //                    lt : 'g'
+            //                }
+            //            }).then(function(response){
+            //                $scope.groups = response.data.list;
+            //            });
 
+            var getFood = function () {
+                var foodOffset = Math.floor(Math.random() * ($scope.whole.total));
+                var req = $http({
+                    method: 'GET'
+                    , url: URL.search
+                    , params: {
+                        api_key: apiKey
+                        , format: 'json'
+                        , max: 1
+                        , offset: foodOffset
+                    }
+                });
+                req.then(function (response) {
+                    $scope.foods.push(response.data.list.item[0]);
+                    var reqReport = $http({
+                        method: 'GET'
+                        , url: URL.nutrients
+                        , params: {
+                            api_key: apiKey
+                            , format: 'json'
+                            , nutrients: Object.keys($scope.nutrients)
+                            , ndbno: response.data.list.item[0].ndbno
+                        }
+                    });
+                    $scope.requests.push(reqReport);
+                    reqReport.then(function (response) {
+                        $scope.reports[response.data.report.foods[0].ndbno] = response.data.report.foods[0];
+                    });
+                });
+            };
+
+            $http({
+                method: 'GET'
+                , url: URL.search
+                , params: {
+                    api_key: apiKey
+                    , format: 'json'
+                    , max: 1
+                    , offset: 0
+                }
+            }).then(function (response) {
+                $scope.whole = response.data.list;
+
+                for (i = 1; i <= theLimit; i++) {
+                    getFood();
+                }
+            });
+            $q.all($scope.requests).then(function (values) {
+                // next steps go here
+            });
         }]);
     </script>
 </head>
@@ -60,10 +129,14 @@
                     <h1>Nom Nom Quiz!</h1>
                 </div>
                 <div class="col-xs-12">
-                    <p>Number of categories: {{groups.total}}</p>
+                    <p>Number of food items: {{whole.total}}</p>
                 </div>
                 <ul>
-                    <li ng-repeat="group in groups.item">{{group.id}}: {{group.name}}</li>
+                    <li ng-repeat="food in foods">{{food.ndbno}}: {{food.name}} ({{food.group}})
+                        <ul ng-if="reports[food.ndbno]">
+                            <li ng-repeat="nutrient in reports[food.ndbno].nutrients">{{nutrients[nutrient.nutrient_id]}}: {{nutrient.gm}} {{nutrient.unit}} per 100 g</li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
