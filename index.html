@@ -21,7 +21,7 @@
             search: 'http://api.nal.usda.gov/ndb/search'
             , list: 'http://api.nal.usda.gov/ndb/list'
             , nutrients: 'http://api.nal.usda.gov/ndb/nutrients'
-            , report: 'http://api.nal.usda.gov/ndb/report'
+            , report: 'http://api.nal.usda.gov/ndb/reports'
         };
         var theScope = {};
         var theLimit = 3;
@@ -40,9 +40,7 @@
         }
         angular.module('myApp', ['mobile-angular-ui', 'ngAnimate']).controller("myCtrl", ['$q', '$scope', '$http', function ($q, $scope, $http, $timeout) {
             theScope = $scope;
-            $scope.foods = [];
-            $scope.reports = {};
-            $scope.requests = [];
+
             $scope.nutrients = {
                 255: "water"
                 , 208: "calories"
@@ -55,6 +53,11 @@
                 , 601: "cholesterol"
             };
             $scope.thing = 'hello';
+            $scope.desired = function(aNutrients){
+                return aNutrients.filter(function(nutrient){
+                    return $scope.nutrients[nutrient.nutrient_id];
+                });
+            };
             //            $http({
             //                method : 'GET',
             //                url : URL.list,
@@ -83,17 +86,17 @@
                     $scope.foods.push(response.data.list.item[0]);
                     var reqReport = $http({
                         method: 'GET'
-                        , url: URL.nutrients
+                        , url: URL.report
                         , params: {
                             api_key: apiKey
                             , format: 'json'
-                            , nutrients: Object.keys($scope.nutrients)
+                            , type: 'b'
                             , ndbno: response.data.list.item[0].ndbno
                         }
                     });
                     $scope.requests.push(reqReport);
                     reqReport.then(function (response) {
-                        $scope.reports[response.data.report.foods[0].ndbno] = response.data.report.foods[0];
+                        $scope.reports[response.data.report.food.ndbno] = response.data.report.food;
                     });
                 });
             };
@@ -109,14 +112,19 @@
                 }
             }).then(function (response) {
                 $scope.whole = response.data.list;
-
+                $scope.init();
+            });
+            $scope.init = function(){
+                $scope.foods = [];
+                $scope.reports = {};
+                $scope.requests = [];
                 for (i = 1; i <= theLimit; i++) {
                     getFood();
                 }
-            });
-            $q.all($scope.requests).then(function (values) {
-                // next steps go here
-            });
+                $q.all($scope.requests).then(function (values) {
+                    // next steps go here
+                });
+            };
         }]);
     </script>
 </head>
@@ -126,16 +134,17 @@
         <div class="container">
             <div class="row">
                 <div class="col-xs-12">
-                    <h1>Nom Nom Quiz!</h1>
+                    <h1><span class="label label-primary">Nom Nom Quiz!</span></h1>
                 </div>
                 <div class="col-xs-12">
                     <p>Number of food items: {{whole.total}}</p>
+                    <p><button ng-click="init()">Restart</button></p>
                 </div>
                 <ul>
                     <li ng-repeat="food in foods">{{food.ndbno}}: {{food.name}} ({{food.group}})
-                        <ul ng-if="reports[food.ndbno]">
-                            <li ng-repeat="nutrient in reports[food.ndbno].nutrients">{{nutrients[nutrient.nutrient_id]}}: {{nutrient.gm}} {{nutrient.unit}} per 100 g</li>
-                        </ul>
+                        <ol ng-if="reports[food.ndbno]">
+                            <li ng-repeat="nutrient in desired(reports[food.ndbno].nutrients)">{{nutrients[nutrient.nutrient_id]}}: {{nutrient.value}} {{nutrient.unit}} per 100 g</li>
+                        </ol>
                     </li>
                 </ul>
             </div>
