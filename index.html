@@ -71,6 +71,10 @@
             //            });
 
             var getFood = function () {
+                // Create a deferred object for this set of requests
+                var defer = $q.defer();
+                // Add promise to the requests array immediately so our $q.all sees it
+                $scope.requests.push(defer.promise);
                 var foodOffset = Math.floor(Math.random() * ($scope.whole.total));
                 var req = $http({
                     method: 'GET'
@@ -94,9 +98,9 @@
                             , ndbno: response.data.list.item[0].ndbno
                         }
                     });
-                    $scope.requests.push(reqReport);
                     reqReport.then(function (response) {
                         $scope.reports[response.data.report.food.ndbno] = response.data.report.food;
+                        defer.resolve();
                     });
                 });
             };
@@ -118,11 +122,32 @@
                 $scope.foods = [];
                 $scope.reports = {};
                 $scope.requests = [];
+                $scope.byNutrient = {};
+                $scope.theNutrient = null;
                 for (i = 1; i <= theLimit; i++) {
                     getFood();
                 }
+                // run after all data is received
                 $q.all($scope.requests).then(function (values) {
-                    // next steps go here
+                    var oTemp = {};
+                    // reorganize the data by nutrient
+                    for (var key in $scope.reports) {
+                        var report = $scope.reports[key];
+                        var nuts = $scope.desired(report.nutrients);
+                        for (var key in nuts) {
+                            var nutrient = nuts[key];
+                            oTemp[nutrient.nutrient_id] = oTemp[nutrient.nutrient_id] || {};
+                            oTemp[nutrient.nutrient_id][report.ndbno] = nutrient;
+                        }
+                    }
+                    // filter down to only nutrients that are in all results
+                    for (var key in oTemp) {
+                        if (Object.keys(oTemp[key]).length == theLimit)
+                            $scope.byNutrient[key] = oTemp[key];
+                    }
+                    var nKeys = Object.keys($scope.byNutrient);
+                    // pick a random nutrient!
+                    $scope.theNutrient = nKeys[Math.floor(Math.random() * nKeys.length)];
                 });
             };
         }]);
@@ -139,12 +164,15 @@
                 <div class="col-xs-12">
                     <p>Number of food items: {{whole.total}}</p>
                     <p><button ng-click="init()">Restart</button></p>
+                    <p ng-if="theNutrient">Let's quiz you on: {{nutrients[theNutrient]}}</p>
                 </div>
                 <ul>
                     <li ng-repeat="food in foods">{{food.ndbno}}: {{food.name}} ({{food.group}})
-                        <ol ng-if="reports[food.ndbno]">
-                            <li ng-repeat="nutrient in desired(reports[food.ndbno].nutrients)">{{nutrients[nutrient.nutrient_id]}}: {{nutrient.value}} {{nutrient.unit}} per 100 g</li>
-                        </ol>
+                        <ul ng-if="reports[food.ndbno]">
+                            <li>{{nutrients[theNutrient]}}:
+                                {{byNutrient[theNutrient][food.ndbno].value}} {{byNutrient[theNutrient][food.ndbno].unit}} per 100 g
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>
