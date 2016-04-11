@@ -26,6 +26,7 @@
         var theScope = {};
         var theLimit = 3;
 
+        // utility function to shuffle arrays
         function shuffle(array) {
             var i = 0
                 , j = 0
@@ -38,6 +39,19 @@
                 array[j] = temp
             }
         }
+
+        // utility function to check for nonzero values within an object
+        function nonzero(obj, keyname)
+        {
+            var result = true;
+            for (var key in obj)
+            {
+                if (obj[key][keyname] == 0)
+                    result = false;
+            }
+            return result;
+        }
+
         angular.module('myApp', ['mobile-angular-ui', 'ngAnimate']).controller("myCtrl", ['$q', '$scope', '$http', function ($q, $scope, $http, $timeout) {
             theScope = $scope;
 
@@ -142,8 +156,10 @@
                     }
                     // filter down to only nutrients that are in all results
                     for (var key in oTemp) {
-                        if (Object.keys(oTemp[key]).length == theLimit)
+                        if (Object.keys(oTemp[key]).length == theLimit && nonzero(oTemp[key], 'value'))
+                        {
                             $scope.byNutrient[key] = oTemp[key];
+                        }
                     }
                     var nKeys = Object.keys($scope.byNutrient);
                     // pick a random nutrient!
