@@ -12,7 +12,7 @@
     <author href="http//github.com/camisotro" email="ctroster@gmail.com">
         Charles Troster
     </author>
-
+    <preference name="phonegap-version" value="3.7.0" />
     <allow-navigation href="https://*/*" />
     <access origin="*" />
     <allow-intent href="http://*/*" />
