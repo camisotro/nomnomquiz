@@ -25,6 +25,10 @@
         };
         var theScope = {};
         var theLimit = 3;
+        var aMode = [
+            { factor : -1, word : 'least' },
+            { factor : 1, word : 'most' }
+        ];
 
         // utility function to shuffle arrays
         function shuffle(array) {
@@ -138,6 +142,9 @@
                 $scope.requests = [];
                 $scope.byNutrient = {};
                 $scope.theNutrient = null;
+
+                $scope.mode = aMode[Math.floor(2*Math.random())];
+
                 for (i = 1; i <= theLimit; i++) {
                     getFood();
                 }
@@ -179,18 +186,25 @@
                 </div>
                 <div class="col-xs-12">
                     <p>Number of food items: {{whole.total}}</p>
-                    <p><button ng-click="init()">Restart</button></p>
-                    <p ng-if="theNutrient">Let's quiz you on: {{nutrients[theNutrient]}}</p>
+                    <p>
+                        <button class="btn btn-default" ng-click="init()">
+                            <i class="fa fa-refresh"></i>
+                            Restart
+                        </button>
+                    </p>
+                    <p ng-if="theNutrient">Which food do you think has the {{mode.word}} {{nutrients[theNutrient]}} per 100 g?</p>
                 </div>
-                <ul>
-                    <li ng-repeat="food in foods">{{food.ndbno}}: {{food.name}} ({{food.group}})
-                        <ul ng-if="reports[food.ndbno]">
-                            <li>{{nutrients[theNutrient]}}:
-                                {{byNutrient[theNutrient][food.ndbno].value}} {{byNutrient[theNutrient][food.ndbno].unit}} per 100 g
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
+                <div class="clearfix"></div>
+                <div class="list-group">
+                    <div ng-repeat="food in foods">
+                        <a class="list-group-item">{{food.ndbno}}: {{food.name}} ({{food.group}})
+                        </a>
+                        <div class="list-group-item list-group-item-success" ng-if="reports[food.ndbno]">
+                            {{nutrients[theNutrient]}}:
+                            {{byNutrient[theNutrient][food.ndbno].value}} {{byNutrient[theNutrient][food.ndbno].unit}} per 100 g
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
