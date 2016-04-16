@@ -140,12 +140,17 @@
                 $scope.whole = response.data.list;
                 $scope.init();
             });
+            $scope.choose = function(option){
+                $scope.showAnswers = true;
+                console.log(option);
+            };
             $scope.init = function(){
                 $scope.foods = [];
                 $scope.reports = {};
                 $scope.requests = [];
                 $scope.byNutrient = {};
                 $scope.theNutrient = null;
+                $scope.showAnswers = false;
 
                 $scope.mode = aMode[Math.floor(2*Math.random())];
 
@@ -203,14 +208,14 @@
                             Restart
                         </button>
                     </p>
-                    <p ng-if="theNutrient">Which food do you think has the {{mode.word}} {{nutrients[theNutrient]}} per 100 g?</p>
+                    <p ng-if="theNutrient">Which you think has the {{mode.word}} {{nutrients[theNutrient]}} per 100 g?</p>
+                    <h2 ng-if="!theNutrient"><span class="label label-default">Loading...</span></h2>
                 </div>
                 <div class="clearfix"></div>
-                <div class="list-group">
+                <div class="list-group" ng-if="theNutrient">
                     <div ng-repeat="food in foods">
-                        <a class="list-group-item">{{food.ndbno}}: {{food.name}} ({{food.group}})
-                        </a>
-                        <div class="{{classes[byNutrient[theNutrient][food.ndbno].value == correct]}}" ng-if="reports[food.ndbno]">
+                        <a class="list-group-item" ng-click="choose(this)">{{food.name}}</a>
+                        <div class="{{classes[byNutrient[theNutrient][food.ndbno].value == correct]}}" ng-if="showAnswers && reports[food.ndbno]">
                             {{nutrients[theNutrient]}}:
                             {{byNutrient[theNutrient][food.ndbno].value}} {{byNutrient[theNutrient][food.ndbno].unit}} per 100 g
                         </div>
