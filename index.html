@@ -76,6 +76,10 @@
                     return $scope.nutrients[nutrient.nutrient_id];
                 });
             };
+            $scope.classes = {
+                true : "list-group-item list-group-item-success",
+                false : "list-group-item list-group-item-danger"
+            };
             //            $http({
             //                method : 'GET',
             //                url : URL.list,
@@ -171,6 +175,13 @@
                     var nKeys = Object.keys($scope.byNutrient);
                     // pick a random nutrient!
                     $scope.theNutrient = nKeys[Math.floor(Math.random() * nKeys.length)];
+                    var aValues = $scope.foods.map(function(food){
+                        return $scope.byNutrient[$scope.theNutrient][food.ndbno].value;
+                    });
+                    if ($scope.mode.factor == 1)
+                        $scope.correct = Math.max.apply(null, aValues);
+                    else
+                        $scope.correct = Math.min.apply(null, aValues);
                 });
             };
         }]);
@@ -199,7 +210,7 @@
                     <div ng-repeat="food in foods">
                         <a class="list-group-item">{{food.ndbno}}: {{food.name}} ({{food.group}})
                         </a>
-                        <div class="list-group-item list-group-item-success" ng-if="reports[food.ndbno]">
+                        <div class="{{classes[byNutrient[theNutrient][food.ndbno].value == correct]}}" ng-if="reports[food.ndbno]">
                             {{nutrients[theNutrient]}}:
                             {{byNutrient[theNutrient][food.ndbno].value}} {{byNutrient[theNutrient][food.ndbno].unit}} per 100 g
                         </div>
