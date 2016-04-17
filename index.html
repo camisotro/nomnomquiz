@@ -1,16 +1,3 @@
-<!--
-I'd like to add:
-Checkmark/X on the clicked object only
-Green/red on the clicked object only
-If you pick the wrong one, green on the right one
-Score counter
-
-How?
-Set a boolean in the scope as to whether a guess has been made ($scope.guessed) which resets to false on reload.
-Click handler does nothing if a guess has been made already. It can attach a key/value to the appropriate object that indicates it was clicked, and this triggers whether to show the check or X.
-Green/red can be handled by a function. If it's the max, it always returns the green class. If it's not the max, it only returns red class if it was clicked, and otherwise the neutral class.
--->
-
 <html>
 <!-- https://www.frankmitchell.org/2015/01/fisher-yates/ for the shuffling algorithm -->
 
@@ -28,196 +15,7 @@ Green/red can be handled by a function. If it's the max, it always returns the g
     <script src="dist/js/angular-animate.js"></script>
     <script src="dist/js/mobile-angular-ui.min.js">
     </script>
-    <script>
-        apiKey = 'wLT26LF3VUbLz6TXR8CjMEZxBto0v6KEfVvhOs09';
-        URL = {
-            search: 'http://api.nal.usda.gov/ndb/search'
-            , list: 'http://api.nal.usda.gov/ndb/list'
-            , nutrients: 'http://api.nal.usda.gov/ndb/nutrients'
-            , report: 'http://api.nal.usda.gov/ndb/reports'
-        };
-        var theScope = {};
-        var theLimit = 3;
-        var aMode = [
-            { factor : -1, word : 'least' },
-            { factor : 1, word : 'most' }
-        ];
-
-        // utility function to shuffle arrays
-        function shuffle(array) {
-            var i = 0
-                , j = 0
-                , temp = null
-
-            for (i = array.length - 1; i > 0; i -= 1) {
-                j = Math.floor(Math.random() * (i + 1))
-                temp = array[i]
-                array[i] = array[j]
-                array[j] = temp
-            }
-        }
-
-        // utility function to check for nonzero values within an object
-        function nonzero(obj, keyname)
-        {
-            var result = true;
-            for (var key in obj)
-            {
-                if (obj[key][keyname] == 0)
-                    result = false;
-            }
-            return result;
-        }
-
-        angular.module('myApp', ['mobile-angular-ui', 'ngAnimate']).controller("myCtrl", ['$q', '$scope', '$http', function ($q, $scope, $http, $timeout) {
-            theScope = $scope;
-
-            $scope.nutrients = {
-                255: "water"
-                , 208: "calories"
-                , 203: "protein"
-                , 204: "fat"
-                , 205: "carbohydrates"
-                , 291: "fiber"
-                , 269: "sugar"
-                , 307: "sodium"
-                , 601: "cholesterol"
-            };
-            $scope.thing = 'hello';
-            $scope.desired = function(aNutrients){
-                return aNutrients.filter(function(nutrient){
-                    return $scope.nutrients[nutrient.nutrient_id];
-                });
-            };
-            $scope.classes = {
-                true : "list-group-item list-group-item-success",
-                false : "list-group-item list-group-item-danger"
-            };
-            $scope.spinclass = function(){
-                return ($scope.loading ? "fa-spin" : "");
-            };
-            $scope.answerclass = function(that){
-                var result = "";
-                var value = $scope.byNutrient[$scope.theNutrient][that.food.ndbno].value;
-                if (value == $scope.correct)
-                    result = $scope.classes.true;
-
-            };
-            //            $http({
-            //                method : 'GET',
-            //                url : URL.list,
-            //                params : {
-            //                    api_key : apiKey,
-            //                    format : 'json',
-            //                    lt : 'g'
-            //                }
-            //            }).then(function(response){
-            //                $scope.groups = response.data.list;
-            //            });
-
-            var getFood = function () {
-                // Create a deferred object for this set of requests
-                var defer = $q.defer();
-                // Add promise to the requests array immediately so our $q.all sees it
-                $scope.requests.push(defer.promise);
-                var foodOffset = Math.floor(Math.random() * ($scope.whole.total));
-                var req = $http({
-                    method: 'GET'
-                    , url: URL.search
-                    , params: {
-                        api_key: apiKey
-                        , format: 'json'
-                        , max: 1
-                        , offset: foodOffset
-                    }
-                });
-                req.then(function (response) {
-                    $scope.foods.push(response.data.list.item[0]);
-                    var reqReport = $http({
-                        method: 'GET'
-                        , url: URL.report
-                        , params: {
-                            api_key: apiKey
-                            , format: 'json'
-                            , type: 'b'
-                            , ndbno: response.data.list.item[0].ndbno
-                        }
-                    });
-                    reqReport.then(function (response) {
-                        $scope.reports[response.data.report.food.ndbno] = response.data.report.food;
-                        defer.resolve();
-                    });
-                });
-            };
-
-            $http({
-                method: 'GET'
-                , url: URL.search
-                , params: {
-                    api_key: apiKey
-                    , format: 'json'
-                    , max: 1
-                    , offset: 0
-                }
-            }).then(function (response) {
-                $scope.whole = response.data.list;
-                $scope.init();
-            });
-            $scope.choose = function(option){
-                if ($scope.guessed)
-                    return false;
-                $scope.guessed = true;
-                option.guessed = true;
-                console.log(option);
-            };
-            $scope.init = function(){
-                $scope.foods = [];
-                $scope.reports = {};
-                $scope.requests = [];
-                $scope.byNutrient = {};
-                $scope.theNutrient = null;
-                $scope.guessed = false;
-                $scope.loading = true;
-
-                $scope.mode = aMode[Math.floor(2*Math.random())];
-
-                for (i = 1; i <= theLimit; i++) {
-                    getFood();
-                }
-                // run after all data is received
-                $q.all($scope.requests).then(function (values) {
-                    var oTemp = {};
-                    // reorganize the data by nutrient
-                    for (var key in $scope.reports) {
-                        var report = $scope.reports[key];
-                        var nuts = $scope.desired(report.nutrients);
-                        for (var key in nuts) {
-                            var nutrient = nuts[key];
-                            oTemp[nutrient.nutrient_id] = oTemp[nutrient.nutrient_id] || {};
-                            oTemp[nutrient.nutrient_id][report.ndbno] = nutrient;
-                        }
-                    }
-                    // filter down to only nutrients that are in all results
-                    for (var key in oTemp) {
-                        if (Object.keys(oTemp[key]).length == theLimit && nonzero(oTemp[key], 'value'))
-                        {
-                            $scope.byNutrient[key] = oTemp[key];
-                        }
-                    }
-                    var nKeys = Object.keys($scope.byNutrient);
-                    // pick a random nutrient!
-                    $scope.theNutrient = nKeys[Math.floor(Math.random() * nKeys.length)];
-                    var aValues = $scope.foods.map(function(food){
-                        return $scope.byNutrient[$scope.theNutrient][food.ndbno].value;
-                    });
-                    if ($scope.mode.factor == 1)
-                        $scope.correct = Math.max.apply(null, aValues);
-                    else
-                        $scope.correct = Math.min.apply(null, aValues);
-                    $scope.loading = false;
-                });
-            };
-        }]);
+    <script src="main.js">
     </script>
 </head>
 
@@ -229,11 +27,17 @@ Green/red can be handled by a function. If it's the max, it always returns the g
                     <h1><span class="label label-primary">Nom Nom Quiz!</span></h1>
                 </div>
                 <div class="col-xs-12">
-                    <p>Number of food items: {{whole.total}}</p>
+                    <p>Right guesses: {{rights}}</p>
+                    <p>Wrong guesses: {{wrongs}}</p>
                     <p>
                         <button class="btn btn-default" ng-click="init()">
-                            <i class="fa fa-refresh {{spinclass()}}"></i>
-                            Restart
+                            <i class="fa fa-refresh {{spinclass()}}"></i>&nbsp;
+                            <span ng-if="!guessed">
+                                Try another one
+                            </span>
+                            <span ng-if="guessed">
+                                Play again
+                            </span>
                         </button>
                     </p>
                     <p ng-if="theNutrient">Which do you think has the {{mode.word}} {{nutrients[theNutrient]}} per 100 g?</p>
@@ -242,8 +46,13 @@ Green/red can be handled by a function. If it's the max, it always returns the g
                 <div class="clearfix"></div>
                 <div class="list-group" ng-if="theNutrient">
                     <div ng-repeat="food in foods">
-                        <a class="list-group-item" ng-click="choose(this)">{{food.name}}</a>
-                        <div class="{{classes[byNutrient[theNutrient][food.ndbno].value == correct]}}" ng-if="guessed && reports[food.ndbno]">
+                        <a class="list-group-item" ng-click="choose(food)">
+                            <b>{{food.name}}</b>
+                            &nbsp;
+                            <span class="text-success" ng-if="food.positive"><i class="fa fa-check fa-lg"></i></span>
+                            <span class="text-danger" ng-if="food.negative"><i class="fa fa-times fa-lg"></i></span>
+                        </a>
+                        <div class="list-group-item {{food.positive ? classes.positive : ''}}{{food.negative ? classes.negative : ''}}" ng-if="guessed && reports[food.ndbno]">
                             {{nutrients[theNutrient]}}:
                             {{byNutrient[theNutrient][food.ndbno].value}} {{byNutrient[theNutrient][food.ndbno].unit}} per 100 g
                         </div>
