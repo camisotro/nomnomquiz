@@ -1,3 +1,16 @@
+<!--
+I'd like to add:
+Checkmark/X on the clicked object only
+Green/red on the clicked object only
+If you pick the wrong one, green on the right one
+Score counter
+
+How?
+Set a boolean in the scope as to whether a guess has been made ($scope.guessed) which resets to false on reload.
+Click handler does nothing if a guess has been made already. It can attach a key/value to the appropriate object that indicates it was clicked, and this triggers whether to show the check or X.
+Green/red can be handled by a function. If it's the max, it always returns the green class. If it's not the max, it only returns red class if it was clicked, and otherwise the neutral class.
+-->
+
 <html>
 <!-- https://www.frankmitchell.org/2015/01/fisher-yates/ for the shuffling algorithm -->
 
@@ -80,6 +93,16 @@
                 true : "list-group-item list-group-item-success",
                 false : "list-group-item list-group-item-danger"
             };
+            $scope.spinclass = function(){
+                return ($scope.loading ? "fa-spin" : "");
+            };
+            $scope.answerclass = function(that){
+                var result = "";
+                var value = $scope.byNutrient[$scope.theNutrient][that.food.ndbno].value;
+                if (value == $scope.correct)
+                    result = $scope.classes.true;
+
+            };
             //            $http({
             //                method : 'GET',
             //                url : URL.list,
@@ -141,7 +164,10 @@
                 $scope.init();
             });
             $scope.choose = function(option){
-                $scope.showAnswers = true;
+                if ($scope.guessed)
+                    return false;
+                $scope.guessed = true;
+                option.guessed = true;
                 console.log(option);
             };
             $scope.init = function(){
@@ -150,7 +176,8 @@
                 $scope.requests = [];
                 $scope.byNutrient = {};
                 $scope.theNutrient = null;
-                $scope.showAnswers = false;
+                $scope.guessed = false;
+                $scope.loading = true;
 
                 $scope.mode = aMode[Math.floor(2*Math.random())];
 
@@ -187,6 +214,7 @@
                         $scope.correct = Math.max.apply(null, aValues);
                     else
                         $scope.correct = Math.min.apply(null, aValues);
+                    $scope.loading = false;
                 });
             };
         }]);
@@ -204,7 +232,7 @@
                     <p>Number of food items: {{whole.total}}</p>
                     <p>
                         <button class="btn btn-default" ng-click="init()">
-                            <i class="fa fa-refresh"></i>
+                            <i class="fa fa-refresh {{spinclass()}}"></i>
                             Restart
                         </button>
                     </p>
@@ -215,7 +243,7 @@
                 <div class="list-group" ng-if="theNutrient">
                     <div ng-repeat="food in foods">
                         <a class="list-group-item" ng-click="choose(this)">{{food.name}}</a>
-                        <div class="{{classes[byNutrient[theNutrient][food.ndbno].value == correct]}}" ng-if="showAnswers && reports[food.ndbno]">
+                        <div class="{{classes[byNutrient[theNutrient][food.ndbno].value == correct]}}" ng-if="guessed && reports[food.ndbno]">
                             {{nutrients[theNutrient]}}:
                             {{byNutrient[theNutrient][food.ndbno].value}} {{byNutrient[theNutrient][food.ndbno].unit}} per 100 g
                         </div>
