@@ -95,7 +95,11 @@ body, .section {
     background-color: #f8f8f8;
 }
 
-
 .scrollable {
     overflow: auto;
+}
+
+p
+{
+    font-size: 1.2em;
 }
